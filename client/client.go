@@ -9,12 +9,11 @@ import (
 	"encoding/json"
 
 	userlib "github.com/cs161-staff/project2-userlib"
+
+	"fa22-project2-cs161-hary/client/helpers"
+	"fa22-project2-cs161-hary/client/models"
+
 	"github.com/google/uuid"
-
-	// hex.EncodeToString(...) is useful for converting []byte to string
-
-	// Useful for string manipulation
-	"strings"
 
 	// Useful for formatting strings (e.g. `fmt.Sprintf`).
 	"fmt"
@@ -101,6 +100,7 @@ func someUsefulThings() {
 // (e.g. like the Username attribute) and methods (e.g. like the StoreFile method below).
 type User struct {
 	Username string
+	PrivKey  userlib.PrivateKeyType
 
 	// You can add other attributes here if you want! But note that in order for attributes to
 	// be included when this struct is serialized to/from JSON, they must be capitalized.
@@ -112,45 +112,134 @@ type User struct {
 
 // NOTE: The following methods have toy (insecure!) implementations.
 
-func InitUser(username string, password string) (userdataptr *User, err error) {
-	var userdata User
+func InitUser(username string, password string) (userdata *User, err error) {
+	var user User
+	userdata = &user
 	userdata.Username = username
-	return &userdata, nil
+
+	var key userlib.UUID
+	key, err = helpers.GenerateDataStoreKey(username + password)
+
+	if err != nil {
+		return
+	}
+
+	var pub userlib.PublicKeyType
+	pub, userdata.PrivKey, err = userlib.PKEKeyGen()
+
+	if err != nil {
+		return
+	}
+
+	userlib.KeystoreSet(username, pub)
+
+	var jsonUser []byte
+	jsonUser, err = json.Marshal(userdata)
+
+	if err != nil {
+		return
+	}
+
+	var passSymKey = userlib.Argon2Key([]byte(password), []byte("password?"), 16)
+	var encJsonUser = userlib.SymEnc(passSymKey, userlib.RandomBytes(16), jsonUser)
+
+	userlib.DatastoreSet(key, encJsonUser)
+
+	return
 }
 
 func GetUser(username string, password string) (userdataptr *User, err error) {
 	var userdata User
+
+	key, err := helpers.GenerateDataStoreKey(username + password)
+	if err != nil {
+		return
+	}
+
+	var encJsonUser []byte
+	var ok bool
+	encJsonUser, ok = userlib.DatastoreGet(key)
+
+	if !ok {
+		err = errors.New("WRONG USERNAME OR PASSWORD")
+		return
+	}
+
+	var passSymKey = userlib.Argon2Key([]byte(password), []byte("password?"), 16)
+	var jsonUser = userlib.SymDec(passSymKey, encJsonUser)
+
+	err = json.Unmarshal(jsonUser, &userdata)
+	if err != nil {
+		return
+	}
+
 	userdataptr = &userdata
 	return userdataptr, nil
 }
 
 func (userdata *User) StoreFile(filename string, content []byte) (err error) {
-	storageKey, err := uuid.FromBytes(userlib.Hash([]byte(filename + userdata.Username))[:16])
+	var document models.Document
+
+	blocks := models.SplitDocumentToBlocks(content)
+
+	document.BlockKeys, err = blocks.Store()
 	if err != nil {
 		return err
 	}
-	contentBytes, err := json.Marshal(content)
-	if err != nil {
-		return err
+
+	fileMapping := models.FileMapping{
+		Username: userdata.Username,
+		Filename: filename,
 	}
-	userlib.DatastoreSet(storageKey, contentBytes)
+
+	fileMapping.StoreDocumentKey(uuid.New())
+
+	err = document.Store(fileMapping)
+
 	return
 }
 
-func (userdata *User) AppendToFile(filename string, content []byte) error {
-	return nil
+func (userdata *User) AppendToFile(filename string, content []byte) (err error) {
+
+	fileMapping := models.FileMapping{
+		Username: userdata.Username,
+		Filename: filename,
+	}
+
+	blocks := models.SplitDocumentToBlocks(content)
+
+	newBlockKeys, err := blocks.Store()
+	if err != nil {
+		return err
+	}
+
+	document, err := models.LoadDocument(fileMapping)
+	if err != nil {
+		return
+	}
+
+	document.BlockKeys = append(document.BlockKeys, newBlockKeys...)
+
+	err = document.Store(fileMapping)
+
+	return
 }
 
 func (userdata *User) LoadFile(filename string) (content []byte, err error) {
-	storageKey, err := uuid.FromBytes(userlib.Hash([]byte(filename + userdata.Username))[:16])
+
+	fileMapping := models.FileMapping{
+		Username: userdata.Username,
+		Filename: filename,
+	}
+
+	document, err := models.LoadDocument(fileMapping)
 	if err != nil {
 		return nil, err
 	}
-	dataJSON, ok := userlib.DatastoreGet(storageKey)
-	if !ok {
-		return nil, errors.New(strings.ToTitle("file not found"))
-	}
-	err = json.Unmarshal(dataJSON, &content)
+
+	blocks, err := models.LoadBlocks(document.BlockKeys)
+
+	content = blocks.MergeToBlob()
 	return content, err
 }
 

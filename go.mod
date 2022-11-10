@@ -1,4 +1,4 @@
-module github.com/cs161-staff/project2-starter-code
+module fa22-project2-cs161-hary
 
 go 1.17
 
