@@ -1,8 +1,8 @@
 package client
 
 import (
-	"encoding/json"
 	"errors"
+	"fa22-project2-cs161-hary/client/helpers"
 
 	userlib "github.com/cs161-staff/project2-userlib"
 	"github.com/google/uuid"
@@ -18,18 +18,18 @@ func InitInvitation(documentKey uuid.UUID) Invitation {
 	}
 }
 
-func LoadInvitation(invitationPointer uuid.UUID) (invitation Invitation, err error) {
+func LoadInvitation(invitationPointer uuid.UUID, recievingUsername string) (invitation Invitation, err error) {
 	serializedInvitation, ok := userlib.DatastoreGet(invitationPointer)
 	if !ok {
 		err = errors.New("INVITATION NOT FOUND")
 		return
 	}
-	err = json.Unmarshal(serializedInvitation, &invitation)
+	err = helpers.UnmarshalAndDecrypt([]byte(recievingUsername), serializedInvitation, &invitation)
 	return
 }
 
-func (invitation Invitation) Store() (invitationPointer uuid.UUID, err error) {
-	serializedInvitation, err := json.Marshal(invitation)
+func (invitation Invitation) Store(recievingUsername string) (invitationPointer uuid.UUID, err error) {
+	serializedInvitation, err := helpers.MarshalAndEncrypt([]byte(recievingUsername), invitation)
 	invitationPointer = uuid.New()
 	userlib.DatastoreSet(invitationPointer, serializedInvitation)
 	return

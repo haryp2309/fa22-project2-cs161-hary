@@ -1,7 +1,6 @@
 package client
 
 import (
-	"encoding/json"
 	"errors"
 	"fa22-project2-cs161-hary/client/helpers"
 	"fmt"
@@ -44,14 +43,15 @@ func InitAccessValidation(documentKey uuid.UUID, validatedUsername string, user 
 }
 
 func (accessValidation AccessValidation) Store() (err error) {
-	marshalledAccessValidation, err := json.Marshal(accessValidation)
+	path := getAccessValidationPath(accessValidation.DocumentKey, accessValidation.ValidatedUsername)
+
+	encryptedAccessValidation, err := helpers.MarshalAndEncrypt([]byte(path), accessValidation)
 	if err != nil {
 		return
 	}
 
-	path := getAccessValidationPath(accessValidation.DocumentKey, accessValidation.ValidatedUsername)
 	key, err := helpers.GenerateDataStoreKey(path)
-	userlib.DatastoreSet(key, marshalledAccessValidation)
+	userlib.DatastoreSet(key, encryptedAccessValidation)
 	return
 }
 
@@ -89,7 +89,7 @@ func loadAccessValidation(validatedUsername string, documentKey uuid.UUID) (acce
 		return
 	}
 
-	err = json.Unmarshal(marshalledAccessValidation, &accessValidation)
+	err = helpers.UnmarshalAndDecrypt([]byte(path), marshalledAccessValidation, &accessValidation)
 	if err != nil {
 		return
 	}

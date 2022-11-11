@@ -1,7 +1,6 @@
 package client
 
 import (
-	"encoding/json"
 	"fmt"
 
 	userlib "github.com/cs161-staff/project2-userlib"
@@ -29,11 +28,16 @@ func InitFileMapping(username string, filename string) (filemapping FileMapping)
 	return
 }
 
+func getFileMappingPath(filename string, username string) string {
+	return "Documents/" + filename + username
+}
+
 const DEBUG_FILEMAPPING = false
 
 func (fileMapping FileMapping) LoadDocumentKey() (documentKey uuid.UUID, err error) {
 
-	key, err := helpers.GenerateDataStoreKey(fileMapping.Filename + fileMapping.Username)
+	path := getFileMappingPath(fileMapping.Filename, fileMapping.Username)
+	key, err := helpers.GenerateDataStoreKey(path)
 	if err != nil {
 		return
 	}
@@ -45,7 +49,7 @@ func (fileMapping FileMapping) LoadDocumentKey() (documentKey uuid.UUID, err err
 		return
 	}
 
-	err = json.Unmarshal(documentKeyBytes, &documentKey)
+	err = helpers.UnmarshalAndDecrypt([]byte(path), documentKeyBytes, &documentKey)
 	if err != nil {
 		return
 	}
@@ -58,11 +62,12 @@ func (fileMapping FileMapping) LoadDocumentKey() (documentKey uuid.UUID, err err
 }
 
 func (fileMapping FileMapping) StoreDocumentKey(documentKey uuid.UUID) (err error) {
-	key, err := helpers.GenerateDataStoreKey(fileMapping.Filename + fileMapping.Username)
+	path := getFileMappingPath(fileMapping.Filename, fileMapping.Username)
+	key, err := helpers.GenerateDataStoreKey(path)
 	if err != nil {
 		return
 	}
-	documentKeyBytes, err := json.Marshal(documentKey)
+	documentKeyBytes, err := helpers.MarshalAndEncrypt([]byte(path), documentKey)
 	if err != nil {
 		return
 	}
