@@ -1,7 +1,8 @@
-package models
+package client
 
 import (
 	"encoding/json"
+	"fmt"
 
 	userlib "github.com/cs161-staff/project2-userlib"
 	"github.com/google/uuid"
@@ -21,32 +22,13 @@ import (
 )
 
 type Document struct {
-	BlockKeys []uuid.UUID
+	BlockKeys     []uuid.UUID
+	OwnerUsername string
 }
 
-const DOCUMENT_BLOCK_SIZE = 32
+const DEBUG_DOCUMENT = false
 
-func SplitDocumentToBlocks(document []byte) (blocks Blocks) {
-	blocks = make(Blocks, 0)
-	remainingDocument := document
-	for len(remainingDocument) > 0 {
-		end := DOCUMENT_BLOCK_SIZE
-		if len(remainingDocument) < end {
-			end = len(remainingDocument)
-		}
-
-		blocks = append(blocks, remainingDocument[:end])
-		remainingDocument = remainingDocument[end:]
-	}
-	return
-}
-
-func LoadDocument(fileMapping FileMapping) (document Document, err error) {
-
-	storageKey, err := fileMapping.LoadDocumentKey()
-	if err != nil {
-		return
-	}
+func LoadDocument(storageKey uuid.UUID) (document Document, err error) {
 
 	documentJSON, ok := userlib.DatastoreGet(storageKey)
 	if !ok {
@@ -63,17 +45,31 @@ func LoadDocument(fileMapping FileMapping) (document Document, err error) {
 	return
 }
 
-func (document Document) Store(fileMapping FileMapping) (err error) {
-
-	storageKey, err := fileMapping.LoadDocumentKey()
-	if err != nil {
-		return err
-	}
+func (document Document) Store(storageKey uuid.UUID) (err error) {
 
 	documentBytes, err := json.Marshal(document)
 	if err != nil {
 		return err
 	}
 	userlib.DatastoreSet(storageKey, documentBytes)
+	return
+}
+
+func InitDocument(blockKeys []uuid.UUID, ownerUsername string) (document Document) {
+	document = Document{
+		BlockKeys:     blockKeys,
+		OwnerUsername: ownerUsername,
+	}
+	return
+}
+
+func (document Document) IsOwner(username string) (err error) {
+	if DEBUG_DOCUMENT {
+		fmt.Printf("\nChecking if %s is the owner of document. The actual owner is %s.\n", username, document.OwnerUsername)
+	}
+	if username != document.OwnerUsername {
+		err = errors.New(strings.ToTitle("user is not owner"))
+	}
+
 	return
 }

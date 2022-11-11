@@ -1,7 +1,8 @@
-package models
+package client
 
 import (
 	"encoding/json"
+	"fmt"
 
 	userlib "github.com/cs161-staff/project2-userlib"
 	"github.com/google/uuid"
@@ -16,17 +17,21 @@ import (
 )
 
 type FileMapping struct {
-	Username    string
-	Filename    string
-	documentKey uuid.UUID // Automatically set when stored
+	Username string
+	Filename string
 }
 
-func (fileMapping FileMapping) LoadDocumentKey() (documentKey uuid.UUID, err error) {
-
-	if fileMapping.documentKey != uuid.Nil {
-		documentKey = fileMapping.documentKey
-		return
+func InitFileMapping(username string, filename string) (filemapping FileMapping) {
+	filemapping = FileMapping{
+		Username: username,
+		Filename: filename,
 	}
+	return
+}
+
+const DEBUG_FILEMAPPING = false
+
+func (fileMapping FileMapping) LoadDocumentKey() (documentKey uuid.UUID, err error) {
 
 	key, err := helpers.GenerateDataStoreKey(fileMapping.Filename + fileMapping.Username)
 	if err != nil {
@@ -45,10 +50,14 @@ func (fileMapping FileMapping) LoadDocumentKey() (documentKey uuid.UUID, err err
 		return
 	}
 
+	if DEBUG_FILEMAPPING {
+		fmt.Printf("\n DEBUG: USER %s ACCESSED FILE %s, DOCUMENTKEY %s\n", fileMapping.Username, fileMapping.Filename, documentKey.String())
+	}
+
 	return
 }
 
-func (fileMapping *FileMapping) StoreDocumentKey(documentKey uuid.UUID) {
+func (fileMapping FileMapping) StoreDocumentKey(documentKey uuid.UUID) (err error) {
 	key, err := helpers.GenerateDataStoreKey(fileMapping.Filename + fileMapping.Username)
 	if err != nil {
 		return
@@ -60,5 +69,8 @@ func (fileMapping *FileMapping) StoreDocumentKey(documentKey uuid.UUID) {
 
 	userlib.DatastoreSet(key, documentKeyBytes)
 
-	fileMapping.documentKey = documentKey
+	if DEBUG_FILEMAPPING {
+		fmt.Printf("\n DEBUG: USER %s STORED DOCUMENTKEY FOR FILE %s, DOCUMENTKEY %s\n", fileMapping.Username, fileMapping.Filename, documentKey.String())
+	}
+	return
 }

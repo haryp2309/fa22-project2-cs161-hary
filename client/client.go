@@ -11,7 +11,6 @@ import (
 	userlib "github.com/cs161-staff/project2-userlib"
 
 	"fa22-project2-cs161-hary/client/helpers"
-	"fa22-project2-cs161-hary/client/models"
 
 	"github.com/google/uuid"
 
@@ -101,6 +100,7 @@ func someUsefulThings() {
 type User struct {
 	Username string
 	PrivKey  userlib.PrivateKeyType
+	SignKey  userlib.DSSignKey
 
 	// You can add other attributes here if you want! But note that in order for attributes to
 	// be included when this struct is serialized to/from JSON, they must be capitalized.
@@ -131,7 +131,14 @@ func InitUser(username string, password string) (userdata *User, err error) {
 		return
 	}
 
-	userlib.KeystoreSet(username, pub)
+	userlib.KeystoreSet(helpers.GetPKKeyStorePath(username), pub)
+
+	var verifyKey userlib.DSVerifyKey
+	userdata.SignKey, verifyKey, err = userlib.DSKeyGen()
+	if err != nil {
+		return
+	}
+	userlib.KeystoreSet(helpers.GetDSKeyStorePath(username), verifyKey)
 
 	var jsonUser []byte
 	jsonUser, err = json.Marshal(userdata)
@@ -178,80 +185,198 @@ func GetUser(username string, password string) (userdataptr *User, err error) {
 }
 
 func (userdata *User) StoreFile(filename string, content []byte) (err error) {
-	var document models.Document
 
-	blocks := models.SplitDocumentToBlocks(content)
+	fileMapping := InitFileMapping(
+		userdata.Username,
+		filename,
+	)
 
-	document.BlockKeys, err = blocks.Store()
+	err = fileMapping.StoreDocumentKey(uuid.New())
 	if err != nil {
 		return err
 	}
 
-	fileMapping := models.FileMapping{
-		Username: userdata.Username,
-		Filename: filename,
+	documentKey, err := fileMapping.LoadDocumentKey()
+	if err != nil {
+		return err
 	}
 
-	fileMapping.StoreDocumentKey(uuid.New())
+	encryptionKey := userlib.RandomBytes(16)
 
-	err = document.Store(fileMapping)
+	validation, err := InitAccessValidation(documentKey, userdata.Username, nil)
+	if err != nil {
+		return
+	}
+	err = validation.Store()
+	if err != nil {
+		return
+	}
+
+	access, err := InitAccess(nil, userdata.Username, documentKey, encryptionKey)
+	if err != nil {
+		return
+	}
+
+	err = access.StoreAccess()
+	if err != nil {
+		return
+	}
+
+	blocks := SplitBlobToBlocks(content).Encrypt(access)
+
+	blockKeys, err := blocks.Store()
+	if err != nil {
+		return err
+	}
+
+	document := InitDocument(
+		blockKeys,
+		userdata.Username,
+	)
+
+	err = document.Store(documentKey)
 
 	return
 }
 
 func (userdata *User) AppendToFile(filename string, content []byte) (err error) {
 
-	fileMapping := models.FileMapping{
-		Username: userdata.Username,
-		Filename: filename,
+	fileMapping := InitFileMapping(
+		userdata.Username,
+		filename,
+	)
+
+	documentKey, err := fileMapping.LoadDocumentKey()
+	if err != nil {
+		return
 	}
 
-	blocks := models.SplitDocumentToBlocks(content)
+	err = CheckAccessValidation(userdata.Username, documentKey)
+	if err != nil {
+		return
+	}
+
+	access, err := LoadAccess(documentKey, *userdata)
+	if err != nil {
+		return
+	}
+
+	blocks := SplitBlobToBlocks(content).Encrypt(access)
 
 	newBlockKeys, err := blocks.Store()
 	if err != nil {
 		return err
 	}
 
-	document, err := models.LoadDocument(fileMapping)
+	document, err := LoadDocument(documentKey)
 	if err != nil {
 		return
 	}
 
 	document.BlockKeys = append(document.BlockKeys, newBlockKeys...)
 
-	err = document.Store(fileMapping)
+	err = document.Store(documentKey)
 
 	return
 }
 
 func (userdata *User) LoadFile(filename string) (content []byte, err error) {
 
-	fileMapping := models.FileMapping{
-		Username: userdata.Username,
-		Filename: filename,
+	fileMapping := InitFileMapping(
+		userdata.Username,
+		filename,
+	)
+
+	documentKey, err := fileMapping.LoadDocumentKey()
+	if err != nil {
+		return
 	}
 
-	document, err := models.LoadDocument(fileMapping)
+	err = CheckAccessValidation(userdata.Username, documentKey)
+	if err != nil {
+		return
+	}
+
+	document, err := LoadDocument(documentKey)
 	if err != nil {
 		return nil, err
 	}
 
-	blocks, err := models.LoadBlocks(document.BlockKeys)
+	access, err := LoadAccess(documentKey, *userdata)
+	if err != nil {
+		return
+	}
 
-	content = blocks.MergeToBlob()
+	blocks, err := LoadBlocks(document.BlockKeys)
+
+	content = blocks.Decrypt(access).MergeToBlob()
 	return content, err
 }
 
 func (userdata *User) CreateInvitation(filename string, recipientUsername string) (
 	invitationPtr uuid.UUID, err error) {
+	documentKey, err := InitFileMapping(userdata.Username, filename).LoadDocumentKey()
+	if err != nil {
+		return
+	}
+	accessValidation, err := InitAccessValidation(documentKey, recipientUsername, userdata)
+	if err != nil {
+		return
+	}
+	err = accessValidation.Store()
+	if err != nil {
+		return
+	}
+
+	parentAccess, err := LoadAccess(documentKey, *userdata)
+	if err != nil {
+		return
+	}
+	access, err := InitAccess(userdata, recipientUsername, documentKey, parentAccess.EncryptionKey)
+	if err != nil {
+		return
+	}
+	err = access.StoreAccess()
+	if err != nil {
+		return
+	}
+	invitationPtr, err = InitInvitation(documentKey).Store()
 	return
 }
 
 func (userdata *User) AcceptInvitation(senderUsername string, invitationPtr uuid.UUID, filename string) error {
+	invitation, err := LoadInvitation(invitationPtr)
+	if err != nil {
+		return err
+	}
+	err = InitFileMapping(userdata.Username, filename).StoreDocumentKey(invitation.DocumentKey)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
 func (userdata *User) RevokeAccess(filename string, recipientUsername string) error {
+
+	fileMapping := InitFileMapping(
+		userdata.Username,
+		filename,
+	)
+
+	documentKey, err := fileMapping.LoadDocumentKey()
+	if err != nil {
+		return err
+	}
+
+	err = RemoveAccess(documentKey, recipientUsername)
+	if err != nil {
+		return err
+	}
+
+	err = RemoveAccessValidation(documentKey, recipientUsername)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
