@@ -2,7 +2,8 @@ package client
 
 import (
 	"errors"
-	"fa22-project2-cs161-hary/client/helpers"
+
+	"github.com/cs161-staff/project2-starter-code/client/helpers"
 
 	userlib "github.com/cs161-staff/project2-userlib"
 	"github.com/google/uuid"

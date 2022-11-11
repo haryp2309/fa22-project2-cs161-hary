@@ -20,8 +20,8 @@ import (
 
 	userlib "github.com/cs161-staff/project2-userlib"
 
-	"fa22-project2-cs161-hary/client"
-	"fa22-project2-cs161-hary/client/helpers"
+	"github.com/cs161-staff/project2-starter-code/client"
+	"github.com/cs161-staff/project2-starter-code/client/helpers"
 )
 
 func TestSetupAndExecution(t *testing.T) {

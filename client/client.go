@@ -10,7 +10,7 @@ import (
 
 	userlib "github.com/cs161-staff/project2-userlib"
 
-	"fa22-project2-cs161-hary/client/helpers"
+	"github.com/cs161-staff/project2-starter-code/client/helpers"
 
 	"github.com/google/uuid"
 

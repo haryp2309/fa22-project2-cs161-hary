@@ -6,7 +6,7 @@ import (
 	userlib "github.com/cs161-staff/project2-userlib"
 	"github.com/google/uuid"
 
-	"fa22-project2-cs161-hary/client/helpers"
+	"github.com/cs161-staff/project2-starter-code/client/helpers"
 
 	// Useful for creating new error messages to return using errors.New("...")
 	"errors"
