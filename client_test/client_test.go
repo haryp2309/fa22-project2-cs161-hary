@@ -292,6 +292,31 @@ var _ = Describe("Client Tests", func() {
 			err = charles.AppendToFile(charlesFile, []byte(contentTwo))
 			Expect(err).ToNot(BeNil())
 		})
+		Specify("Existing user should not be able to create new account", func() {
+			userlib.DebugMsg("Creating user alice")
+			_, err := client.InitUser("alice", "password123")
+			Expect(err).To(BeNil())
+			userlib.DebugMsg("Creating user alice again")
+			_, err = client.InitUser("alice", "password321")
+			Expect(err).ToNot(BeNil())
+			Expect(err.Error()).To(Equal(client.ERROR_USER_EXISTS))
+		})
+
+		Specify("Usernames are case-sensitive: Bob and bob are different users", func() {
+			userlib.DebugMsg("Creating user Bob")
+			_, err := client.InitUser("Bob", "password123")
+			Expect(err).To(BeNil())
+			userlib.DebugMsg("Creating user bob")
+			_, err = client.InitUser("bob", "password123")
+			Expect(err).To(BeNil())
+
+		})
+
+		Specify("The client SHOULD support passwords length equal to zero.", func() {
+			userlib.DebugMsg("Creating user Bob with no password")
+			_, err := client.InitUser("Bob", "")
+			Expect(err).To(BeNil())
+		})
 
 	})
 })

@@ -37,13 +37,21 @@ func getUserKey(username string, password string) (argonKey []byte) {
 	return
 }
 
-// NOTE: The following methods have toy (insecure!) implementations.
+func doUserExist(username string) (ok bool) {
+	path := helpers.GetPKKeyStorePath(username)
+	_, ok = userlib.KeystoreGet(path)
+	return
+}
 
 func InitUser(username string, password string) (userdata *User, err error) {
 	var user User
 	userdata = &user
 	userdata.Username = username
 
+	if doUserExist(username) {
+		err = errors.New(ERROR_USER_EXISTS)
+		return
+	}
 	userKey := getUserKey(username, password)
 	key, err := uuid.FromBytes(userKey)
 
