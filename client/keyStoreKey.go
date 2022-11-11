@@ -1,4 +1,4 @@
-package helpers
+package client
 
 func GetDSKeyStorePath(username string) string {
 	return "DSKEY/" + username

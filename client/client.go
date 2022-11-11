@@ -10,8 +10,6 @@ import (
 
 	userlib "github.com/cs161-staff/project2-userlib"
 
-	"github.com/cs161-staff/project2-starter-code/client/helpers"
-
 	"github.com/google/uuid"
 
 	// Useful for formatting strings (e.g. `fmt.Sprintf`).
@@ -38,7 +36,7 @@ func getUserKey(username string, password string) (argonKey []byte) {
 }
 
 func doUserExist(username string) (ok bool) {
-	path := helpers.GetPKKeyStorePath(username)
+	path := GetPKKeyStorePath(username)
 	_, ok = userlib.KeystoreGet(path)
 	return
 }
@@ -66,14 +64,14 @@ func InitUser(username string, password string) (userdata *User, err error) {
 		return
 	}
 
-	userlib.KeystoreSet(helpers.GetPKKeyStorePath(username), pub)
+	userlib.KeystoreSet(GetPKKeyStorePath(username), pub)
 
 	var verifyKey userlib.DSVerifyKey
 	userdata.SignKey, verifyKey, err = userlib.DSKeyGen()
 	if err != nil {
 		return
 	}
-	userlib.KeystoreSet(helpers.GetDSKeyStorePath(username), verifyKey)
+	userlib.KeystoreSet(GetDSKeyStorePath(username), verifyKey)
 
 	var jsonUser []byte
 	jsonUser, err = json.Marshal(userdata)

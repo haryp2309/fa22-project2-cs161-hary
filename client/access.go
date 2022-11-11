@@ -5,8 +5,6 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/cs161-staff/project2-starter-code/client/helpers"
-
 	userlib "github.com/cs161-staff/project2-userlib"
 	"github.com/google/uuid"
 )
@@ -62,18 +60,18 @@ func (access *Access) StoreAccess() (err error) {
 		return
 	}
 
-	pubKey, ok := userlib.KeystoreGet(helpers.GetPKKeyStorePath(access.ToUsername))
+	pubKey, ok := userlib.KeystoreGet(GetPKKeyStorePath(access.ToUsername))
 	if !ok {
 		err = errors.New(strings.ToTitle("public key not found"))
 		return
 	}
-	encryptedAccess, err := helpers.HybridEncrypt(pubKey, jsonAccess)
+	encryptedAccess, err := HybridEncrypt(pubKey, jsonAccess)
 	if err != nil {
 		return
 	}
 
 	path := getAccessPath(access.DocumentKey, access.ToUsername)
-	key, err := helpers.GenerateDataStoreKey(path)
+	key, err := GenerateDataStoreKey(path)
 
 	userlib.DatastoreSet(key, encryptedAccess)
 
@@ -83,7 +81,7 @@ func (access *Access) StoreAccess() (err error) {
 
 func LoadAccess(documentKey uuid.UUID, user User) (access Access, err error) {
 	path := getAccessPath(documentKey, user.Username)
-	key, err := helpers.GenerateDataStoreKey(path)
+	key, err := GenerateDataStoreKey(path)
 	if err != nil {
 		return
 	}
@@ -94,7 +92,7 @@ func LoadAccess(documentKey uuid.UUID, user User) (access Access, err error) {
 		return
 	}
 
-	jsonAccess, err := helpers.HybridDecrypt(user.PrivKey, encryptedAccess)
+	jsonAccess, err := HybridDecrypt(user.PrivKey, encryptedAccess)
 	if err != nil {
 		return
 	}
@@ -118,7 +116,7 @@ func (access Access) isValid() (err error) {
 		}
 		return
 	}
-	verifyKey, ok := userlib.KeystoreGet(helpers.GetDSKeyStorePath(access.FromUsername))
+	verifyKey, ok := userlib.KeystoreGet(GetDSKeyStorePath(access.FromUsername))
 	if !ok {
 		err = errors.New(strings.ToTitle("access not found"))
 		return
@@ -136,7 +134,7 @@ func (access Access) isValid() (err error) {
 
 func RemoveAccess(documentKey uuid.UUID, toUsername string) (err error) {
 	path := getAccessPath(documentKey, toUsername)
-	key, err := helpers.GenerateDataStoreKey(path)
+	key, err := GenerateDataStoreKey(path)
 	if err != nil {
 		return
 	}

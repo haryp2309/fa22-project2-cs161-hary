@@ -6,8 +6,6 @@ import (
 	userlib "github.com/cs161-staff/project2-userlib"
 	"github.com/google/uuid"
 
-	"github.com/cs161-staff/project2-starter-code/client/helpers"
-
 	// Useful for creating new error messages to return using errors.New("...")
 	"errors"
 
@@ -37,7 +35,7 @@ const DEBUG_FILEMAPPING = false
 func (fileMapping FileMapping) LoadDocumentKey() (documentKey uuid.UUID, err error) {
 
 	path := getFileMappingPath(fileMapping.Filename, fileMapping.Username)
-	key, err := helpers.GenerateDataStoreKey(path)
+	key, err := GenerateDataStoreKey(path)
 	if err != nil {
 		return
 	}
@@ -49,7 +47,7 @@ func (fileMapping FileMapping) LoadDocumentKey() (documentKey uuid.UUID, err err
 		return
 	}
 
-	err = helpers.UnmarshalAndDecrypt([]byte(path), documentKeyBytes, &documentKey)
+	err = UnmarshalAndDecrypt([]byte(path), documentKeyBytes, &documentKey)
 	if err != nil {
 		return
 	}
@@ -63,11 +61,11 @@ func (fileMapping FileMapping) LoadDocumentKey() (documentKey uuid.UUID, err err
 
 func (fileMapping FileMapping) StoreDocumentKey(documentKey uuid.UUID) (err error) {
 	path := getFileMappingPath(fileMapping.Filename, fileMapping.Username)
-	key, err := helpers.GenerateDataStoreKey(path)
+	key, err := GenerateDataStoreKey(path)
 	if err != nil {
 		return
 	}
-	documentKeyBytes, err := helpers.MarshalAndEncrypt([]byte(path), documentKey)
+	documentKeyBytes, err := MarshalAndEncrypt([]byte(path), documentKey)
 	if err != nil {
 		return
 	}

@@ -4,8 +4,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/cs161-staff/project2-starter-code/client/helpers"
-
 	userlib "github.com/cs161-staff/project2-userlib"
 	"github.com/google/uuid"
 )
@@ -46,18 +44,18 @@ func InitAccessValidation(documentKey uuid.UUID, validatedUsername string, user 
 func (accessValidation AccessValidation) Store() (err error) {
 	path := getAccessValidationPath(accessValidation.DocumentKey, accessValidation.ValidatedUsername)
 
-	encryptedAccessValidation, err := helpers.MarshalAndEncrypt([]byte(path), accessValidation)
+	encryptedAccessValidation, err := MarshalAndEncrypt([]byte(path), accessValidation)
 	if err != nil {
 		return
 	}
 
-	key, err := helpers.GenerateDataStoreKey(path)
+	key, err := GenerateDataStoreKey(path)
 	userlib.DatastoreSet(key, encryptedAccessValidation)
 	return
 }
 
 func (accessValidation AccessValidation) validate() (err error) {
-	verifyKey, ok := userlib.KeystoreGet(helpers.GetDSKeyStorePath(accessValidation.FromUsername))
+	verifyKey, ok := userlib.KeystoreGet(GetDSKeyStorePath(accessValidation.FromUsername))
 	if DEBUG_ACCESS_VALIDATION {
 		fmt.Printf(
 			"\nValidating access to documentKey %s for user %s\n",
@@ -80,7 +78,7 @@ func (accessValidation AccessValidation) validate() (err error) {
 
 func loadAccessValidation(validatedUsername string, documentKey uuid.UUID) (accessValidation AccessValidation, err error) {
 	path := getAccessValidationPath(documentKey, validatedUsername)
-	key, err := helpers.GenerateDataStoreKey(path)
+	key, err := GenerateDataStoreKey(path)
 	if err != nil {
 		return
 	}
@@ -90,7 +88,7 @@ func loadAccessValidation(validatedUsername string, documentKey uuid.UUID) (acce
 		return
 	}
 
-	err = helpers.UnmarshalAndDecrypt([]byte(path), marshalledAccessValidation, &accessValidation)
+	err = UnmarshalAndDecrypt([]byte(path), marshalledAccessValidation, &accessValidation)
 	if err != nil {
 		return
 	}
@@ -127,7 +125,7 @@ func CheckAccessValidation(validatedUsername string, documentKey uuid.UUID) (err
 
 func RemoveAccessValidation(documentKey uuid.UUID, toUsername string) (err error) {
 	path := getAccessValidationPath(documentKey, toUsername)
-	key, err := helpers.GenerateDataStoreKey(path)
+	key, err := GenerateDataStoreKey(path)
 	if err != nil {
 		return
 	}

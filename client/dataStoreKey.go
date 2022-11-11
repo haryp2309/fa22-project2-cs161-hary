@@ -1,4 +1,4 @@
-package helpers
+package client
 
 import (
 	"github.com/google/uuid"
