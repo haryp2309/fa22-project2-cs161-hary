@@ -32,6 +32,11 @@ type User struct {
 	SignKey  userlib.DSSignKey
 }
 
+func getUserKey(username string, password string) (argonKey []byte) {
+	argonKey = userlib.Argon2Key([]byte(password), []byte(username), 16)
+	return
+}
+
 // NOTE: The following methods have toy (insecure!) implementations.
 
 func InitUser(username string, password string) (userdata *User, err error) {
@@ -39,8 +44,8 @@ func InitUser(username string, password string) (userdata *User, err error) {
 	userdata = &user
 	userdata.Username = username
 
-	var key userlib.UUID
-	key, err = helpers.GenerateDataStoreKey(username + password)
+	userKey := getUserKey(username, password)
+	key, err := uuid.FromBytes(userKey)
 
 	if err != nil {
 		return
@@ -69,8 +74,7 @@ func InitUser(username string, password string) (userdata *User, err error) {
 		return
 	}
 
-	var passSymKey = userlib.Argon2Key([]byte(password), []byte("password?"), 16)
-	var encJsonUser = userlib.SymEnc(passSymKey, userlib.RandomBytes(16), jsonUser)
+	var encJsonUser = userlib.SymEnc(userKey, userlib.RandomBytes(16), jsonUser)
 
 	userlib.DatastoreSet(key, encJsonUser)
 
@@ -80,7 +84,8 @@ func InitUser(username string, password string) (userdata *User, err error) {
 func GetUser(username string, password string) (userdataptr *User, err error) {
 	var userdata User
 
-	key, err := helpers.GenerateDataStoreKey(username + password)
+	userKey := getUserKey(username, password)
+	key, err := uuid.FromBytes(userKey)
 	if err != nil {
 		return
 	}
@@ -94,8 +99,7 @@ func GetUser(username string, password string) (userdataptr *User, err error) {
 		return
 	}
 
-	var passSymKey = userlib.Argon2Key([]byte(password), []byte("password?"), 16)
-	var jsonUser = userlib.SymDec(passSymKey, encJsonUser)
+	var jsonUser = userlib.SymDec(userKey, encJsonUser)
 
 	err = json.Unmarshal(jsonUser, &userdata)
 	if err != nil {
