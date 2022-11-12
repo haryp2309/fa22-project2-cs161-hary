@@ -258,6 +258,10 @@ var _ = Describe("Client Tests", func() {
 			err = charles.AppendToFile(charlesFile, []byte(contentTwo))
 			Expect(err).ToNot(BeNil())
 		})
+
+	})
+	Describe("Custom Tests", func() {
+
 		Specify("Existing user should not be able to create new account", func() {
 			userlib.DebugMsg("Creating user alice")
 			_, err := client.InitUser("alice", "password123")
@@ -283,5 +287,42 @@ var _ = Describe("Client Tests", func() {
 			Expect(err).To(BeNil())
 		})
 
+		Specify(`The client MUST enforce that there is only a single copy of a file. 
+			Sharing the file MAY NOT create a copy of the file.`, func() {
+			userlib.DebugMsg("Creating user Bob")
+			bob, err := client.InitUser("Bob", "bestpassword321")
+			Expect(err).To(BeNil())
+
+			userlib.DebugMsg("Creating user Eve")
+			eve, err := client.InitUser("Eve", "bestpassword321")
+			Expect(err).To(BeNil())
+
+			eve.StoreFile("file123", []byte("abc"))
+			inv, err := eve.CreateInvitation("file123", "Bob")
+			Expect(err).To(BeNil())
+
+			err = bob.AcceptInvitation("Eve", inv, "file321")
+			Expect(err).To(BeNil())
+
+			err = bob.AppendToFile("file321", []byte("cba"))
+			Expect(err).To(BeNil())
+
+			byteContent, err := eve.LoadFile("file123")
+			Expect(err).To(BeNil())
+
+			content := string(byteContent)
+			Expect(content).To(Equal("abccba"))
+		})
+
+		Specify("Filenames MAY be any length, including zero (empty string).", func() {
+			userlib.DebugMsg("Creating user Bob")
+			bob, err := client.InitUser("Bob", "bestpassword321")
+			Expect(err).To(BeNil())
+
+			userlib.DebugMsg("Creating file with empty name")
+			err = bob.StoreFile("", []byte(""))
+			Expect(err).To(BeNil())
+
+		})
 	})
 })
