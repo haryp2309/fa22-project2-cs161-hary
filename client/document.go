@@ -7,17 +7,10 @@ import (
 	userlib "github.com/cs161-staff/project2-userlib"
 	"github.com/google/uuid"
 
-	// hex.EncodeToString(...) is useful for converting []byte to string
-
-	// Useful for string manipulation
 	"strings"
 
-	// Useful for formatting strings (e.g. `fmt.Sprintf`).
-
-	// Useful for creating new error messages to return using errors.New("...")
 	"errors"
 
-	// Optional.
 	_ "strconv"
 )
 

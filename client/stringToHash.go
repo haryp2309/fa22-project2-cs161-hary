@@ -1,6 +1,8 @@
 package client
 
-import userlib "github.com/cs161-staff/project2-userlib"
+import (
+	userlib "github.com/cs161-staff/project2-userlib"
+)
 
 func ByteToHash16(input []byte) (hashedText16 []byte) {
 	var hashedText = userlib.Hash(input)

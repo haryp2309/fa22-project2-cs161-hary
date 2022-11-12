@@ -1,6 +1,8 @@
 package client
 
-import userlib "github.com/cs161-staff/project2-userlib"
+import (
+	userlib "github.com/cs161-staff/project2-userlib"
+)
 
 type Blob []byte
 

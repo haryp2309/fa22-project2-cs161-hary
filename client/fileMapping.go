@@ -6,11 +6,7 @@ import (
 	userlib "github.com/cs161-staff/project2-userlib"
 	"github.com/google/uuid"
 
-	// Useful for creating new error messages to return using errors.New("...")
 	"errors"
-
-	// Optional.
-	_ "strconv"
 )
 
 type FileMapping struct {
