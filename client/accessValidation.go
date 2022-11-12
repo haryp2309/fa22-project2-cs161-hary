@@ -2,7 +2,6 @@ package client
 
 import (
 	"errors"
-	"fmt"
 
 	userlib "github.com/cs161-staff/project2-userlib"
 	"github.com/google/uuid"
@@ -57,7 +56,7 @@ func (accessValidation AccessValidation) Store() (err error) {
 func (accessValidation AccessValidation) validate() (err error) {
 	verifyKey, ok := userlib.KeystoreGet(GetDSKeyStorePath(accessValidation.FromUsername))
 	if DEBUG_ACCESS_VALIDATION {
-		fmt.Printf(
+		userlib.DebugMsg(
 			"\nValidating access to documentKey %s for user %s\n",
 			accessValidation.DocumentKey.String(),
 			accessValidation.ValidatedUsername,

@@ -2,7 +2,6 @@ package client
 
 import (
 	"encoding/json"
-	"fmt"
 
 	userlib "github.com/cs161-staff/project2-userlib"
 	"github.com/google/uuid"
@@ -58,7 +57,7 @@ func InitDocument(blockKeys []uuid.UUID, ownerUsername string) (document Documen
 
 func (document Document) IsOwner(username string) (err error) {
 	if DEBUG_DOCUMENT {
-		fmt.Printf("\nChecking if %s is the owner of document. The actual owner is %s.\n", username, document.OwnerUsername)
+		userlib.DebugMsg("\nChecking if %s is the owner of document. The actual owner is %s.\n", username, document.OwnerUsername)
 	}
 	if username != document.OwnerUsername {
 		err = errors.New(strings.ToTitle("user is not owner"))

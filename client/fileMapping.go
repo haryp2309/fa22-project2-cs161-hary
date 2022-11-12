@@ -1,8 +1,6 @@
 package client
 
 import (
-	"fmt"
-
 	userlib "github.com/cs161-staff/project2-userlib"
 	"github.com/google/uuid"
 
@@ -49,7 +47,7 @@ func (fileMapping FileMapping) LoadDocumentKey() (documentKey uuid.UUID, err err
 	}
 
 	if DEBUG_FILEMAPPING {
-		fmt.Printf("\n DEBUG: USER %s ACCESSED FILE %s, DOCUMENTKEY %s\n", fileMapping.Username, fileMapping.Filename, documentKey.String())
+		userlib.DebugMsg("\n DEBUG: USER %s ACCESSED FILE %s, DOCUMENTKEY %s\n", fileMapping.Username, fileMapping.Filename, documentKey.String())
 	}
 
 	return
@@ -69,7 +67,7 @@ func (fileMapping FileMapping) StoreDocumentKey(documentKey uuid.UUID) (err erro
 	userlib.DatastoreSet(key, documentKeyBytes)
 
 	if DEBUG_FILEMAPPING {
-		fmt.Printf("\n DEBUG: USER %s STORED DOCUMENTKEY FOR FILE %s, DOCUMENTKEY %s\n", fileMapping.Username, fileMapping.Filename, documentKey.String())
+		userlib.DebugMsg("\n DEBUG: USER %s STORED DOCUMENTKEY FOR FILE %s, DOCUMENTKEY %s\n", fileMapping.Username, fileMapping.Filename, documentKey.String())
 	}
 	return
 }
