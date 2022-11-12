@@ -300,6 +300,16 @@ func (userdata *User) RevokeAccess(filename string, recipientUsername string) er
 		return err
 	}
 
+	accessValidation, err := loadAccessValidation(recipientUsername, documentKey)
+	if err != nil {
+		return err
+	}
+
+	if accessValidation.FromUsername != userdata.Username {
+		err = errors.New("USER DOES NOT HAVE DIRECT ACCESS")
+		return err
+	}
+
 	err = RemoveAccess(documentKey, recipientUsername)
 	if err != nil {
 		return err
