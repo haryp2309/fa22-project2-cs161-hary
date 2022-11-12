@@ -10,5 +10,15 @@
 		"scope": "go",
 		"prefix": "ernil",
 		"body": "Expect(err).To(BeNil())",
+	},
+
+	"Return if err not nil": {
+		"scope": "go",
+		"prefix": "retnil",
+		"body": [
+			"if err != nil {",
+			"\treturn",
+			"}",
+		]
 	}
 }
