@@ -6,6 +6,7 @@ package client_test
 import (
 	// Some imports use an underscore to prevent the compiler from complaining
 	// about unused imports.
+
 	_ "encoding/hex"
 	_ "errors"
 	_ "strconv"
@@ -356,6 +357,32 @@ var _ = Describe("Client Tests", func() {
 			userlib.DebugMsg("Bob tries to revoke access for Alice")
 			err = bob.RevokeAccess(FILENAME, "Alice")
 			Expect(err).ToNot(BeNil())
+		})
+
+		Specify("The client MUST NOT assume that filenames are globally unique.", func() {
+			userlib.DebugMsg("Creating user Bob and Alice")
+			bob, err := client.InitUser("Bob", "bestpassword123")
+			Expect(err).To(BeNil())
+			alice, err := client.InitUser("Alice", "bestpassword123")
+			Expect(err).To(BeNil())
+
+			const FILENAME = "filename"
+			const CONTENT_1 = "Very interessting document about absolutely nothing."
+			const CONTENT_2 = "Very boring document about absolutely nothing."
+
+			userlib.DebugMsg("Bob stores a file with a filename")
+			err = bob.StoreFile(FILENAME, []byte(CONTENT_1))
+			Expect(err).To(BeNil())
+
+			userlib.DebugMsg("Alice stores another file with same filename")
+			err = alice.StoreFile(FILENAME, []byte(CONTENT_2))
+			Expect(err).To(BeNil())
+
+			userlib.DebugMsg("Alice loads her file")
+			byteContent, err := alice.LoadFile(FILENAME)
+			Expect(err).To(BeNil())
+			Expect(string(byteContent)).To(Equal(CONTENT_2))
+
 		})
 	})
 })
