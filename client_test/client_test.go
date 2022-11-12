@@ -324,5 +324,38 @@ var _ = Describe("Client Tests", func() {
 			Expect(err).To(BeNil())
 
 		})
+
+		Specify("User should only be able to revoke access to a file if he/she directly shared to that person", func() {
+			userlib.DebugMsg("Creating user Bob, Alice and Eve")
+			bob, err := client.InitUser("Bob", "bestpassword321")
+			Expect(err).To(BeNil())
+			eve, err := client.InitUser("Eve", "bestpassword321")
+			Expect(err).To(BeNil())
+			alice, err := client.InitUser("Alice", "bestpassword321")
+			Expect(err).To(BeNil())
+
+			userlib.DebugMsg("Bob creates a file.")
+			const FILENAME = "file"
+			const CONTENT = "Very interessting document about absolutely nothing."
+			bob.StoreFile(FILENAME, []byte(CONTENT))
+
+			userlib.DebugMsg("Bob creates invite to eve")
+			inv, err := bob.CreateInvitation(FILENAME, "Eve")
+			Expect(err).To(BeNil())
+
+			userlib.DebugMsg("Eve accepts the invite")
+			eve.AcceptInvitation("Bob", inv, FILENAME)
+
+			userlib.DebugMsg("Eve creates invite to Alice")
+			inv, err = eve.CreateInvitation(FILENAME, "Alice")
+			Expect(err).To(BeNil())
+
+			userlib.DebugMsg("Alice accepts the invite")
+			alice.AcceptInvitation("Alice", inv, FILENAME)
+
+			userlib.DebugMsg("Bob tries to revoke access for Alice")
+			err = bob.RevokeAccess(FILENAME, "Alice")
+			Expect(err).ToNot(BeNil())
+		})
 	})
 })
