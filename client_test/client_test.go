@@ -265,7 +265,6 @@ var _ = Describe("Client Tests", func() {
 			userlib.DebugMsg("Creating user alice again")
 			_, err = client.InitUser("alice", "password321")
 			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal(client.ERROR_USER_EXISTS))
 		})
 
 		Specify("Usernames are case-sensitive: Bob and bob are different users", func() {
