@@ -384,5 +384,39 @@ var _ = Describe("Client Tests", func() {
 			Expect(string(byteContent)).To(Equal(CONTENT_2))
 
 		})
+
+		Specify("Overwriting the contents of a file does not change who the file is shared with.", func() {
+			userlib.DebugMsg("Creating user Bob and Alice")
+			bob, err := client.InitUser("Bob", "bestpassword123")
+			Expect(err).To(BeNil())
+			alice, err := client.InitUser("Alice", "bestpassword123")
+			Expect(err).To(BeNil())
+
+			const FILENAME = "filename"
+			const CONTENT = "Very interessting document about absolutely nothing."
+
+			userlib.DebugMsg("Bob stores a file")
+			err = bob.StoreFile(FILENAME, []byte(CONTENT))
+			Expect(err).To(BeNil())
+
+			userlib.DebugMsg("Bob shares file with Alice")
+			inv, err := bob.CreateInvitation(FILENAME, "Alice")
+			Expect(err).To(BeNil())
+			alice.AcceptInvitation("Bob", inv, FILENAME)
+
+			userlib.DebugMsg("Alice loads file")
+			byteContent, err := alice.LoadFile(FILENAME)
+			Expect(err).To(BeNil())
+			Expect(string(byteContent)).To(Equal(CONTENT))
+
+			userlib.DebugMsg("Bob stores a file again with same filename")
+			err = bob.StoreFile(FILENAME, []byte(CONTENT))
+			Expect(err).To(BeNil())
+
+			userlib.DebugMsg("Alice loads file again")
+			byteContent, err = alice.LoadFile(FILENAME)
+			Expect(err).To(BeNil())
+			Expect(string(byteContent)).To(Equal(CONTENT))
+		})
 	})
 })
