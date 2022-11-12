@@ -1,0 +1,14 @@
+{
+	"Userlib Print": {
+		"scope": "go",
+		"prefix": "usp",
+		"body": "userlib.DebugMsg(\"$1\")",
+		"description": "Log output to console"
+	},
+
+	"Expect err to be nil": {
+		"scope": "go",
+		"prefix": "ernil",
+		"body": "Expect(err).To(BeNil())",
+	}
+}
