@@ -8,9 +8,11 @@ import (
 	// about unused imports.
 
 	_ "encoding/hex"
+	"encoding/json"
 	_ "errors"
 	"strconv"
 	_ "strconv"
+	"strings"
 	_ "strings"
 	"testing"
 
@@ -458,6 +460,86 @@ var _ = Describe("Client Tests", func() {
 
 			map1 := userlib.KeystoreGetMap()
 			Expect(map0).To(Equal(map1))
+
+		})
+
+		Specify("Data should not be revealed in plain text when stored in Datastore.", func() {
+			userlib.DebugMsg("Creating user Bob ")
+			bob, err := client.InitUser("Bob", "bestpassword123")
+			Expect(err).To(BeNil())
+
+			const CONTENT = "Very interessting document about absolutely nothing."
+			const FILENAME = "filename"
+
+			userlib.DebugMsg("Bob stores a file")
+			err = bob.StoreFile(FILENAME, []byte(CONTENT))
+			Expect(err).To(BeNil())
+
+			userlib.DebugMsg("Checking if any information was leaked as plaintext")
+			map0 := userlib.DatastoreGetMap()
+			jsonMap, err := json.Marshal(map0)
+			Expect(err).To(BeNil())
+			stringMap := string(jsonMap)
+
+			containsPlaintextContent := strings.Contains(stringMap, CONTENT)
+			Expect(containsPlaintextContent).To(BeFalse())
+
+			containsPlaintextFilename := strings.Contains(stringMap, FILENAME)
+			Expect(containsPlaintextFilename).To(BeFalse())
+		})
+
+		Specify("Appending to file should not take too much bandwith", func() {
+			userlib.DebugMsg("Creating user Bob ")
+			bob, err := client.InitUser("Bob", "bestpassword123")
+			Expect(err).To(BeNil())
+
+			const CONTENT = `
+			Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do 
+			eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim 
+			ad minim veniam, quis nostrud exercitation ullamco laboris nisi 
+			ut aliquip ex ea commodo consequat. Duis aute irure dolor in 
+			reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla 
+			pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa 
+			qui officia deserunt mollit anim id est laborum
+			Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do 
+			eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim 
+			ad minim veniam, quis nostrud exercitation ullamco laboris nisi 
+			ut aliquip ex ea commodo consequat. Duis aute irure dolor in 
+			reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla 
+			pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa 
+			qui officia deserunt mollit anim id est laborum
+			Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do 
+			eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim 
+			ad minim veniam, quis nostrud exercitation ullamco laboris nisi 
+			ut aliquip ex ea commodo consequat. Duis aute irure dolor in 
+			reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla 
+			pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa 
+			qui officia deserunt mollit anim id est laborum
+			Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do 
+			eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim 
+			ad minim veniam, quis nostrud exercitation ullamco laboris nisi 
+			ut aliquip ex ea commodo consequat. Duis aute irure dolor in 
+			reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla 
+			pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa 
+			qui officia deserunt mollit anim id est laborum
+			`
+			const FILENAME = "filename"
+
+			userlib.DatastoreResetBandwidth()
+			userlib.DebugMsg("Bob stores a big file")
+			err = bob.StoreFile(FILENAME, []byte(CONTENT))
+			Expect(err).To(BeNil())
+
+			bandwith0 := userlib.DatastoreGetBandwidth()
+			userlib.DatastoreResetBandwidth()
+
+			userlib.DebugMsg("Appending file data: %s", contentTwo)
+			err = bob.AppendToFile(FILENAME, []byte("."))
+			Expect(err).To(BeNil())
+
+			bandwith1 := userlib.DatastoreGetBandwidth()
+
+			Expect(bandwith0 > bandwith1).To(BeTrue())
 
 		})
 	})

@@ -1,6 +1,8 @@
 package client
 
 import (
+	"strconv"
+
 	userlib "github.com/cs161-staff/project2-userlib"
 	"github.com/google/uuid"
 
@@ -10,6 +12,13 @@ import (
 
 type Blocks [][]byte
 
+const DEBUG_BLOCKS = false
+
+func getBlockPath(documentKey uuid.UUID, blockPosition int) (path string) {
+	path = documentKey.String() + strconv.Itoa(blockPosition)
+	return
+}
+
 func (blocks Blocks) MergeToBlob() (document []byte) {
 	document = make([]byte, 0)
 	for _, block := range blocks {
@@ -18,16 +27,23 @@ func (blocks Blocks) MergeToBlob() (document []byte) {
 	return
 }
 
-func LoadBlocks(blockKeys []uuid.UUID) (blocks Blocks, err error) {
+func LoadBlocks(documentKey uuid.UUID, blocksCount int) (blocks Blocks, err error) {
 
 	blocks = make(Blocks, 0)
 
-	for _, blockKey := range blockKeys {
+	for i := 0; i < blocksCount; i++ {
+		blockKey, err := GenerateDataStoreKey(getBlockPath(documentKey, i))
+		if err != nil {
+			return nil, err
+		}
 		block, ok := userlib.DatastoreGet(blockKey)
+		if DEBUG_BLOCKS {
+			userlib.DebugMsg("Loading a block...")
+		}
 
 		if !ok {
 			err = errors.New(strings.ToTitle("block not found"))
-			return
+			return nil, err
 		}
 		blocks = append(blocks, block)
 	}
@@ -36,11 +52,19 @@ func LoadBlocks(blockKeys []uuid.UUID) (blocks Blocks, err error) {
 
 }
 
-func (blocks Blocks) Store() (blockKeys []uuid.UUID, err error) {
-	blockKeys = make([]uuid.UUID, len(blocks))
+func (blocks Blocks) Store(documentKey uuid.UUID, blockStartPosition int) (blocksCount int, err error) {
+	blocksCount = blockStartPosition
 	for i, block := range blocks {
-		blockKeys[i] = uuid.New()
-		userlib.DatastoreSet(blockKeys[i], block)
+		if DEBUG_BLOCKS {
+			userlib.DebugMsg("Storing a block...")
+		}
+		path := getBlockPath(documentKey, blockStartPosition+i)
+		blockKey, err := GenerateDataStoreKey(path)
+		if err != nil {
+			return 0, err
+		}
+		userlib.DatastoreSet(blockKey, block)
+		blocksCount++
 	}
 	return
 }

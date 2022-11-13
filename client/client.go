@@ -195,13 +195,13 @@ func (userdata *User) StoreFile(filename string, content []byte) (err error) {
 
 	blocks := SplitBlobToBlocks(content).Encrypt(access)
 
-	blockKeys, err := blocks.Store()
+	blocksCount, err := blocks.Store(documentKey, 0)
 	if err != nil {
 		return err
 	}
 
 	document := InitDocument(
-		blockKeys,
+		blocksCount,
 		userdata.Username,
 	)
 
@@ -234,17 +234,15 @@ func (userdata *User) AppendToFile(filename string, content []byte) (err error) 
 
 	blocks := SplitBlobToBlocks(content).Encrypt(access)
 
-	newBlockKeys, err := blocks.Store()
-	if err != nil {
-		return err
-	}
-
 	document, err := LoadDocument(documentKey)
 	if err != nil {
 		return
 	}
 
-	document.BlockKeys = append(document.BlockKeys, newBlockKeys...)
+	document.BlocksCount, err = blocks.Store(documentKey, document.BlocksCount)
+	if err != nil {
+		return err
+	}
 
 	err = document.Store(documentKey)
 
@@ -278,7 +276,7 @@ func (userdata *User) LoadFile(filename string) (content []byte, err error) {
 		return
 	}
 
-	blocks, err := LoadBlocks(document.BlockKeys)
+	blocks, err := LoadBlocks(documentKey, document.BlocksCount)
 
 	content = blocks.Decrypt(access).MergeToBlob()
 	return content, err

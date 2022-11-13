@@ -14,7 +14,7 @@ import (
 )
 
 type Document struct {
-	BlockKeys     []uuid.UUID
+	BlocksCount   int
 	OwnerUsername string
 }
 
@@ -44,12 +44,13 @@ func (document Document) Store(storageKey uuid.UUID) (err error) {
 		return err
 	}
 	userlib.DatastoreSet(storageKey, documentBytes)
+
 	return
 }
 
-func InitDocument(blockKeys []uuid.UUID, ownerUsername string) (document Document) {
+func InitDocument(blocksCount int, ownerUsername string) (document Document) {
 	document = Document{
-		BlockKeys:     blockKeys,
+		BlocksCount:   blocksCount,
 		OwnerUsername: ownerUsername,
 	}
 	return
