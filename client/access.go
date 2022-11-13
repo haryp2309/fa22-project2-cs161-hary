@@ -72,6 +72,9 @@ func (access *Access) StoreAccess() (err error) {
 
 	path := getAccessPath(access.DocumentKey, access.ToUsername)
 	key, err := GenerateDataStoreKey(path)
+	if err != nil {
+		return
+	}
 
 	err = DatastoreSet(key, encryptedAccess)
 	if err != nil {
