@@ -36,7 +36,10 @@ func LoadBlocks(documentKey uuid.UUID, blocksCount int) (blocks Blocks, err erro
 		if err != nil {
 			return nil, err
 		}
-		block, ok := userlib.DatastoreGet(blockKey)
+		block, ok, err := DatastoreGet(blockKey)
+		if err != nil {
+			return nil, err
+		}
 		if DEBUG_BLOCKS {
 			userlib.DebugMsg("Loading a block...")
 		}
@@ -63,7 +66,10 @@ func (blocks Blocks) Store(documentKey uuid.UUID, blockStartPosition int) (block
 		if err != nil {
 			return 0, err
 		}
-		userlib.DatastoreSet(blockKey, block)
+		err = DatastoreSet(blockKey, block)
+		if err != nil {
+			return 0, err
+		}
 		blocksCount++
 	}
 	return

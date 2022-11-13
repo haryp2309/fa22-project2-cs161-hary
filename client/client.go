@@ -110,7 +110,10 @@ func InitUser(username string, password string) (userdata *User, err error) {
 
 	var encJsonUser = userlib.SymEnc(userKey, userlib.RandomBytes(16), jsonUser)
 
-	userlib.DatastoreSet(key, encJsonUser)
+	err = DatastoreSet(key, encJsonUser)
+	if err != nil {
+		return
+	}
 
 	err = user.validateUserKeys()
 	if err != nil {
@@ -131,7 +134,10 @@ func GetUser(username string, password string) (userdataptr *User, err error) {
 
 	var encJsonUser []byte
 	var ok bool
-	encJsonUser, ok = userlib.DatastoreGet(key)
+	encJsonUser, ok, err = DatastoreGet(key)
+	if err != nil {
+		return
+	}
 
 	if !ok {
 		err = errors.New("WRONG USERNAME OR PASSWORD")

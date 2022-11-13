@@ -3,7 +3,6 @@ package client
 import (
 	"errors"
 
-	userlib "github.com/cs161-staff/project2-userlib"
 	"github.com/google/uuid"
 )
 
@@ -18,7 +17,10 @@ func InitInvitation(documentKey uuid.UUID) Invitation {
 }
 
 func LoadInvitation(invitationPointer uuid.UUID, recievingUsername string) (invitation Invitation, err error) {
-	serializedInvitation, ok := userlib.DatastoreGet(invitationPointer)
+	serializedInvitation, ok, err := DatastoreGet(invitationPointer)
+	if err != nil {
+		return
+	}
 	if !ok {
 		err = errors.New("INVITATION NOT FOUND")
 		return
@@ -29,7 +31,13 @@ func LoadInvitation(invitationPointer uuid.UUID, recievingUsername string) (invi
 
 func (invitation Invitation) Store(recievingUsername string) (invitationPointer uuid.UUID, err error) {
 	serializedInvitation, err := MarshalAndEncrypt([]byte(recievingUsername), invitation)
+	if err != nil {
+		return
+	}
 	invitationPointer = uuid.New()
-	userlib.DatastoreSet(invitationPointer, serializedInvitation)
+	err = DatastoreSet(invitationPointer, serializedInvitation)
+	if err != nil {
+		return
+	}
 	return
 }

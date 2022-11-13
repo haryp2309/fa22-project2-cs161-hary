@@ -34,7 +34,10 @@ func (fileMapping FileMapping) LoadDocumentKey() (documentKey uuid.UUID, err err
 		return
 	}
 
-	documentKeyBytes, ok := userlib.DatastoreGet(key)
+	documentKeyBytes, ok, err := DatastoreGet(key)
+	if err != nil {
+		return
+	}
 
 	if !ok {
 		err = errors.New("WRONG USERNAME OR PASSWORD")
@@ -64,7 +67,10 @@ func (fileMapping FileMapping) StoreDocumentKey(documentKey uuid.UUID) (err erro
 		return
 	}
 
-	userlib.DatastoreSet(key, documentKeyBytes)
+	err = DatastoreSet(key, documentKeyBytes)
+	if err != nil {
+		return
+	}
 
 	if DEBUG_FILEMAPPING {
 		userlib.DebugMsg("\n DEBUG: USER %s STORED DOCUMENTKEY FOR FILE %s, DOCUMENTKEY %s\n", fileMapping.Username, fileMapping.Filename, documentKey.String())

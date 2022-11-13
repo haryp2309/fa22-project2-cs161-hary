@@ -73,7 +73,10 @@ func (access *Access) StoreAccess() (err error) {
 	path := getAccessPath(access.DocumentKey, access.ToUsername)
 	key, err := GenerateDataStoreKey(path)
 
-	userlib.DatastoreSet(key, encryptedAccess)
+	err = DatastoreSet(key, encryptedAccess)
+	if err != nil {
+		return
+	}
 
 	return
 
@@ -85,8 +88,10 @@ func LoadAccess(documentKey uuid.UUID, user User) (access Access, err error) {
 	if err != nil {
 		return
 	}
-	encryptedAccess, ok := userlib.DatastoreGet(key)
-
+	encryptedAccess, ok, err := DatastoreGet(key)
+	if err != nil {
+		return
+	}
 	if !ok {
 		err = errors.New(strings.ToTitle("access not found"))
 		return

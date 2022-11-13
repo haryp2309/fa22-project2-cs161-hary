@@ -22,7 +22,10 @@ const DEBUG_DOCUMENT = false
 
 func LoadDocument(storageKey uuid.UUID) (document Document, err error) {
 
-	documentJSON, ok := userlib.DatastoreGet(storageKey)
+	documentJSON, ok, err := DatastoreGet(storageKey)
+	if err != nil {
+		return
+	}
 	if !ok {
 		err = errors.New(strings.ToTitle("file not found"))
 		return
@@ -43,7 +46,10 @@ func (document Document) Store(storageKey uuid.UUID) (err error) {
 	if err != nil {
 		return err
 	}
-	userlib.DatastoreSet(storageKey, documentBytes)
+	err = DatastoreSet(storageKey, documentBytes)
+	if err != nil {
+		return
+	}
 
 	return
 }

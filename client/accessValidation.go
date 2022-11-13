@@ -49,7 +49,13 @@ func (accessValidation AccessValidation) Store() (err error) {
 	}
 
 	key, err := GenerateDataStoreKey(path)
-	userlib.DatastoreSet(key, encryptedAccessValidation)
+	if err != nil {
+		return
+	}
+	err = DatastoreSet(key, encryptedAccessValidation)
+	if err != nil {
+		return
+	}
 	return
 }
 
@@ -81,7 +87,10 @@ func loadAccessValidation(validatedUsername string, documentKey uuid.UUID) (acce
 	if err != nil {
 		return
 	}
-	marshalledAccessValidation, ok := userlib.DatastoreGet(key)
+	marshalledAccessValidation, ok, err := DatastoreGet(key)
+	if err != nil {
+		return
+	}
 	if !ok {
 		err = errors.New("ACCESS VALIDATION NOT FOUND")
 		return
@@ -128,6 +137,6 @@ func RemoveAccessValidation(documentKey uuid.UUID, toUsername string) (err error
 	if err != nil {
 		return
 	}
-	userlib.DatastoreDelete(key)
+	err = DatastoreDelete(key)
 	return
 }
