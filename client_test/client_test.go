@@ -9,6 +9,7 @@ import (
 
 	_ "encoding/hex"
 	_ "errors"
+	"strconv"
 	_ "strconv"
 	_ "strings"
 	"testing"
@@ -436,6 +437,28 @@ var _ = Describe("Client Tests", func() {
 
 			_, err = client.GetUser("Bob", "bestpassword123")
 			Expect(err).ToNot(BeNil())
+		})
+
+		Specify("Keystore should not scale up with number of files.", func() {
+			userlib.DebugMsg("Creating user Bob ")
+			bob, err := client.InitUser("Bob", "bestpassword123")
+			Expect(err).To(BeNil())
+
+			map0 := userlib.KeystoreGetMap()
+
+			userlib.DebugMsg("Bob stores 100 files")
+			const CONTENT = "Very interessting document about absolutely nothing."
+			const FILENAME = "filename"
+
+			for i := 0; i < 100; i++ {
+				//userlib.DebugMsg("Bob stores file" + strconv.Itoa(i))
+				err = bob.StoreFile(FILENAME+strconv.Itoa(i), []byte(CONTENT))
+				Expect(err).To(BeNil())
+			}
+
+			map1 := userlib.KeystoreGetMap()
+			Expect(map0).To(Equal(map1))
+
 		})
 	})
 })
