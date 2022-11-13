@@ -16,9 +16,6 @@ import (
 
 	// Useful for creating new error messages to return using errors.New("...")
 	"errors"
-
-	// Optional.
-	_ "strconv"
 )
 
 // This is the type definition for the User struct.
