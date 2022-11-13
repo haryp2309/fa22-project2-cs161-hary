@@ -418,5 +418,24 @@ var _ = Describe("Client Tests", func() {
 			Expect(err).To(BeNil())
 			Expect(string(byteContent)).To(Equal(CONTENT))
 		})
+
+		Specify("Malicious tampering with keystore should be detected.", func() {
+			userlib.DebugMsg("Creating user Bob ")
+			_, err := client.InitUser("Bob", "bestpassword123")
+			Expect(err).To(BeNil())
+
+			userlib.DebugMsg("Eve tries to change public key of bob")
+			evePub, _, err := userlib.PKEKeyGen()
+			Expect(err).To(BeNil())
+			keystore := userlib.KeystoreGetMap()
+			userlib.KeystoreClear()
+			for key := range keystore {
+				err = userlib.KeystoreSet(key, evePub)
+				Expect(err).To(BeNil())
+			}
+
+			_, err = client.GetUser("Bob", "bestpassword123")
+			Expect(err).ToNot(BeNil())
+		})
 	})
 })

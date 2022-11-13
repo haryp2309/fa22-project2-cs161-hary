@@ -41,6 +41,34 @@ func doUserExist(username string) (ok bool) {
 	return
 }
 
+func (user User) validateUserKeys() (err error) {
+	const VALIDATION_FAILED = "USER VALIDATION FAILED; MALICIOUS ACTIVITY DETECTED; "
+	pub, ok := userlib.KeystoreGet(GetPKKeyStorePath(user.Username))
+	if !ok {
+		err = errors.New(VALIDATION_FAILED + "PUBLIC PKKEY NOT FOUND")
+		return
+	}
+
+	const CONTENT = "CONTENT"
+	encContent, err := userlib.PKEEnc(pub, []byte(CONTENT))
+	if err != nil {
+		err = errors.New(VALIDATION_FAILED + err.Error())
+		return
+	}
+	decContent, err := userlib.PKEDec(user.PrivKey, encContent)
+	if err != nil {
+		err = errors.New(VALIDATION_FAILED + err.Error())
+		return
+	}
+	if string(decContent) != CONTENT {
+		err = errors.New(VALIDATION_FAILED + "PRIVATE AND PUBLIC KEY DOES NOT MATCH")
+		return
+	}
+
+	return
+
+}
+
 func InitUser(username string, password string) (userdata *User, err error) {
 	var user User
 	userdata = &user
@@ -84,6 +112,11 @@ func InitUser(username string, password string) (userdata *User, err error) {
 
 	userlib.DatastoreSet(key, encJsonUser)
 
+	err = user.validateUserKeys()
+	if err != nil {
+		return
+	}
+
 	return
 }
 
@@ -113,6 +146,12 @@ func GetUser(username string, password string) (userdataptr *User, err error) {
 	}
 
 	userdataptr = &userdata
+
+	err = userdata.validateUserKeys()
+	if err != nil {
+		return
+	}
+
 	return userdataptr, nil
 }
 
