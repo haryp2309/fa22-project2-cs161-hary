@@ -25,6 +25,7 @@ type User struct {
 	Username string
 	PrivKey  userlib.PrivateKeyType
 	SignKey  userlib.DSSignKey
+	SymKey   []byte
 }
 
 func getUserKey(username string, password string) (argonKey []byte) {
@@ -70,6 +71,7 @@ func InitUser(username string, password string) (userdata *User, err error) {
 	var user User
 	userdata = &user
 	userdata.Username = username
+	userdata.SymKey = userlib.RandomBytes(16)
 
 	if doUserExist(username) {
 		err = errors.New(ERROR_USER_EXISTS)
@@ -165,12 +167,12 @@ func (userdata *User) StoreFile(filename string, content []byte) (err error) {
 		filename,
 	)
 
-	err = fileMapping.StoreDocumentKey(uuid.New())
+	err = fileMapping.StoreDocumentKey(uuid.New(), userdata.SymKey)
 	if err != nil {
 		return err
 	}
 
-	documentKey, err := fileMapping.LoadDocumentKey()
+	documentKey, err := fileMapping.LoadDocumentKey(userdata.SymKey)
 	if err != nil {
 		return err
 	}
@@ -220,7 +222,7 @@ func (userdata *User) AppendToFile(filename string, content []byte) (err error) 
 		filename,
 	)
 
-	documentKey, err := fileMapping.LoadDocumentKey()
+	documentKey, err := fileMapping.LoadDocumentKey(userdata.SymKey)
 	if err != nil {
 		return
 	}
@@ -259,7 +261,7 @@ func (userdata *User) LoadFile(filename string) (content []byte, err error) {
 		filename,
 	)
 
-	documentKey, err := fileMapping.LoadDocumentKey()
+	documentKey, err := fileMapping.LoadDocumentKey(userdata.SymKey)
 	if err != nil {
 		return
 	}
@@ -287,7 +289,7 @@ func (userdata *User) LoadFile(filename string) (content []byte, err error) {
 
 func (userdata *User) CreateInvitation(filename string, recipientUsername string) (
 	invitationPtr uuid.UUID, err error) {
-	documentKey, err := InitFileMapping(userdata.Username, filename).LoadDocumentKey()
+	documentKey, err := InitFileMapping(userdata.Username, filename).LoadDocumentKey(userdata.SymKey)
 	if err != nil {
 		return
 	}
@@ -321,7 +323,7 @@ func (userdata *User) AcceptInvitation(senderUsername string, invitationPtr uuid
 	if err != nil {
 		return err
 	}
-	err = InitFileMapping(userdata.Username, filename).StoreDocumentKey(invitation.DocumentKey)
+	err = InitFileMapping(userdata.Username, filename).StoreDocumentKey(invitation.DocumentKey, userdata.SymKey)
 	if err != nil {
 		return err
 	}
@@ -335,7 +337,7 @@ func (userdata *User) RevokeAccess(filename string, recipientUsername string) er
 		filename,
 	)
 
-	documentKey, err := fileMapping.LoadDocumentKey()
+	documentKey, err := fileMapping.LoadDocumentKey(userdata.SymKey)
 	if err != nil {
 		return err
 	}

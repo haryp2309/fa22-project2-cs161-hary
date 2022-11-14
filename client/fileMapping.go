@@ -26,7 +26,7 @@ func getFileMappingPath(filename string, username string) string {
 
 const DEBUG_FILEMAPPING = false
 
-func (fileMapping FileMapping) LoadDocumentKey() (documentKey uuid.UUID, err error) {
+func (fileMapping FileMapping) LoadDocumentKey(symKey []byte) (documentKey uuid.UUID, err error) {
 
 	path := getFileMappingPath(fileMapping.Filename, fileMapping.Username)
 	key, err := GenerateDataStoreKey(path)
@@ -44,7 +44,7 @@ func (fileMapping FileMapping) LoadDocumentKey() (documentKey uuid.UUID, err err
 		return
 	}
 
-	err = UnmarshalAndDecrypt([]byte(path), documentKeyBytes, &documentKey)
+	err = UnmarshalAndDecrypt(symKey, documentKeyBytes, &documentKey)
 	if err != nil {
 		return
 	}
@@ -56,13 +56,13 @@ func (fileMapping FileMapping) LoadDocumentKey() (documentKey uuid.UUID, err err
 	return
 }
 
-func (fileMapping FileMapping) StoreDocumentKey(documentKey uuid.UUID) (err error) {
+func (fileMapping FileMapping) StoreDocumentKey(documentKey uuid.UUID, symKey []byte) (err error) {
 	path := getFileMappingPath(fileMapping.Filename, fileMapping.Username)
 	key, err := GenerateDataStoreKey(path)
 	if err != nil {
 		return
 	}
-	documentKeyBytes, err := MarshalAndEncrypt([]byte(path), documentKey)
+	documentKeyBytes, err := MarshalAndEncrypt(symKey, documentKey)
 	if err != nil {
 		return
 	}
