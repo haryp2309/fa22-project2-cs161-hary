@@ -160,7 +160,7 @@ func GetUser(username string, password string) (userdataptr *User, err error) {
 	return userdataptr, nil
 }
 
-func (userdata *User) StoreFile(filename string, content []byte) (err error) {
+func (userdata *User) storeNewFile(filename string, content []byte) (err error) {
 
 	fileMapping := InitFileMapping(
 		userdata.Username,
@@ -172,9 +172,13 @@ func (userdata *User) StoreFile(filename string, content []byte) (err error) {
 		return err
 	}
 
-	documentKey, err := fileMapping.LoadDocumentKey(userdata.SymKey)
+	documentKey, ok, err := fileMapping.LoadDocumentKey(userdata.SymKey)
 	if err != nil {
 		return err
+	}
+	if !ok {
+		err = errors.New(ERROR_NO_FILEMAPPING_FOUND)
+		return
 	}
 
 	encryptionKey := userlib.RandomBytes(16)
@@ -215,6 +219,54 @@ func (userdata *User) StoreFile(filename string, content []byte) (err error) {
 	return
 }
 
+func (userdata *User) storeExistingFile(documentKey uuid.UUID, content []byte) (err error) {
+
+	err = CheckAccessValidation(userdata.Username, documentKey)
+	if err != nil {
+		return
+	}
+
+	access, err := LoadAccess(documentKey, *userdata)
+	if err != nil {
+		return
+	}
+
+	blocks := SplitBlobToBlocks(content).Encrypt(access)
+
+	document, err := LoadDocument(documentKey)
+	if err != nil {
+		return
+	}
+
+	document.BlocksCount, err = blocks.Store(documentKey, 0)
+	if err != nil {
+		return err
+	}
+
+	err = document.Store(documentKey)
+	return
+}
+
+func (userdata *User) StoreFile(filename string, content []byte) (err error) {
+
+	fileMapping := InitFileMapping(
+		userdata.Username,
+		filename,
+	)
+
+	documentKey, ok, err := fileMapping.LoadDocumentKey(userdata.SymKey)
+	if err != nil {
+		return err
+	}
+	if ok {
+		err = userdata.storeExistingFile(documentKey, content)
+	} else {
+		err = userdata.storeNewFile(filename, content)
+	}
+
+	return
+}
+
 func (userdata *User) AppendToFile(filename string, content []byte) (err error) {
 
 	fileMapping := InitFileMapping(
@@ -222,8 +274,12 @@ func (userdata *User) AppendToFile(filename string, content []byte) (err error) 
 		filename,
 	)
 
-	documentKey, err := fileMapping.LoadDocumentKey(userdata.SymKey)
+	documentKey, ok, err := fileMapping.LoadDocumentKey(userdata.SymKey)
 	if err != nil {
+		return
+	}
+	if !ok {
+		err = errors.New(ERROR_NO_FILEMAPPING_FOUND)
 		return
 	}
 
@@ -261,8 +317,12 @@ func (userdata *User) LoadFile(filename string) (content []byte, err error) {
 		filename,
 	)
 
-	documentKey, err := fileMapping.LoadDocumentKey(userdata.SymKey)
+	documentKey, ok, err := fileMapping.LoadDocumentKey(userdata.SymKey)
 	if err != nil {
+		return
+	}
+	if !ok {
+		err = errors.New(ERROR_NO_FILEMAPPING_FOUND)
 		return
 	}
 
@@ -289,10 +349,15 @@ func (userdata *User) LoadFile(filename string) (content []byte, err error) {
 
 func (userdata *User) CreateInvitation(filename string, recipientUsername string) (
 	invitationPtr uuid.UUID, err error) {
-	documentKey, err := InitFileMapping(userdata.Username, filename).LoadDocumentKey(userdata.SymKey)
+	documentKey, ok, err := InitFileMapping(userdata.Username, filename).LoadDocumentKey(userdata.SymKey)
 	if err != nil {
 		return
 	}
+	if !ok {
+		err = errors.New(ERROR_NO_FILEMAPPING_FOUND)
+		return
+	}
+
 	accessValidation, err := InitAccessValidation(documentKey, recipientUsername, userdata)
 	if err != nil {
 		return
@@ -337,8 +402,12 @@ func (userdata *User) RevokeAccess(filename string, recipientUsername string) er
 		filename,
 	)
 
-	documentKey, err := fileMapping.LoadDocumentKey(userdata.SymKey)
+	documentKey, ok, err := fileMapping.LoadDocumentKey(userdata.SymKey)
 	if err != nil {
+		return err
+	}
+	if !ok {
+		err = errors.New(ERROR_NO_FILEMAPPING_FOUND)
 		return err
 	}
 

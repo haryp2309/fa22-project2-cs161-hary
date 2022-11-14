@@ -396,10 +396,12 @@ var _ = Describe("Client Tests", func() {
 			Expect(err).To(BeNil())
 
 			const FILENAME = "filename"
-			const CONTENT = "Very interessting document about absolutely nothing."
+			const CONTENT_0 = "Very interessting document about absolutely nothing."
+			const CONTENT_1 = "Very very interessting document about absolutely nothing."
+			const CONTENT_2 = "Very very very interessting document about absolutely nothing."
 
 			userlib.DebugMsg("Bob stores a file")
-			err = bob.StoreFile(FILENAME, []byte(CONTENT))
+			err = bob.StoreFile(FILENAME, []byte(CONTENT_0))
 			Expect(err).To(BeNil())
 
 			userlib.DebugMsg("Bob shares file with Alice")
@@ -410,16 +412,26 @@ var _ = Describe("Client Tests", func() {
 			userlib.DebugMsg("Alice loads file")
 			byteContent, err := alice.LoadFile(FILENAME)
 			Expect(err).To(BeNil())
-			Expect(string(byteContent)).To(Equal(CONTENT))
+			Expect(string(byteContent)).To(Equal(CONTENT_0))
 
 			userlib.DebugMsg("Bob stores a file again with same filename")
-			err = bob.StoreFile(FILENAME, []byte(CONTENT))
+			err = bob.StoreFile(FILENAME, []byte(CONTENT_1))
 			Expect(err).To(BeNil())
 
 			userlib.DebugMsg("Alice loads file again")
 			byteContent, err = alice.LoadFile(FILENAME)
 			Expect(err).To(BeNil())
-			Expect(string(byteContent)).To(Equal(CONTENT))
+			Expect(string(byteContent)).To(Equal(CONTENT_1))
+
+			userlib.DebugMsg("Alice stores another file again with same filename")
+			err = alice.StoreFile(FILENAME, []byte(CONTENT_2))
+			Expect(err).To(BeNil())
+
+			userlib.DebugMsg("Bob loads file again")
+			byteContent, err = bob.LoadFile(FILENAME)
+			Expect(err).To(BeNil())
+			Expect(string(byteContent)).To(Equal(CONTENT_2))
+
 		})
 
 		Specify("Malicious tampering with keystore should be detected.", func() {

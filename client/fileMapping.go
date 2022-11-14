@@ -3,8 +3,6 @@ package client
 import (
 	userlib "github.com/cs161-staff/project2-userlib"
 	"github.com/google/uuid"
-
-	"errors"
 )
 
 type FileMapping struct {
@@ -26,7 +24,7 @@ func getFileMappingPath(filename string, username string) string {
 
 const DEBUG_FILEMAPPING = false
 
-func (fileMapping FileMapping) LoadDocumentKey(symKey []byte) (documentKey uuid.UUID, err error) {
+func (fileMapping FileMapping) LoadDocumentKey(symKey []byte) (documentKey uuid.UUID, ok bool, err error) {
 
 	path := getFileMappingPath(fileMapping.Filename, fileMapping.Username)
 	key, err := GenerateDataStoreKey(path)
@@ -35,12 +33,7 @@ func (fileMapping FileMapping) LoadDocumentKey(symKey []byte) (documentKey uuid.
 	}
 
 	documentKeyBytes, ok, err := DatastoreGet(key)
-	if err != nil {
-		return
-	}
-
-	if !ok {
-		err = errors.New("WRONG USERNAME OR PASSWORD")
+	if err != nil || !ok {
 		return
 	}
 
